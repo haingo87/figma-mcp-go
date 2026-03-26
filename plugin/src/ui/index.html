@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>figma-mcp-go</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="info-section">
+        <div class="info-row">
+          <span class="info-label">File</span>
+          <span class="info-value" id="file-name">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Selection</span>
+          <span class="info-value" id="selection-count">0 node(s)</span>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="badge disconnected" id="status-badge">
+          <span class="dot" id="dot"></span>
+          <span class="badge-text" id="badge-text">Disconnected</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./App.ts"></script>
+  </body>
+</html>
