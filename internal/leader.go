@@ -18,9 +18,10 @@ var leaderLogger = log.New(os.Stderr, "[leader] ", 0)
 // HTTP endpoints for health checks and follower RPC proxying.
 //
 // Endpoints:
-//   /ws   — WebSocket upgrade for the Figma plugin
-//   /ping — Health check (GET)
-//   /rpc  — JSON RPC for follower tool calls (POST)
+//
+//	/ws   — WebSocket upgrade for the Figma plugin
+//	/ping — Health check (GET)
+//	/rpc  — JSON RPC for follower tool calls (POST)
 type Leader struct {
 	port    int
 	bridge  *Bridge
@@ -83,10 +84,13 @@ func (l *Leader) handlePing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	err := json.NewEncoder(w).Encode(map[string]string{
 		"status":  "ok",
 		"version": l.version,
 	})
+	if err != nil {
+		leaderLogger.Printf("encode ping response error: %v", err)
+	}
 }
 
 // handleWS upgrades the connection to WebSocket for the Figma plugin.
@@ -140,5 +144,7 @@ func (l *Leader) handleRPC(w http.ResponseWriter, r *http.Request) {
 func (l *Leader) sendJSON(w http.ResponseWriter, status int, body RPCResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(body)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		leaderLogger.Printf("encode response error: %v", err)
+	}
 }

@@ -38,7 +38,7 @@ func RegisterTools(s *server.MCPServer, node *Node) {
 			mcp.Description("Node ID in colon format e.g. '4029:12345'"),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		nodeID, _ := req.Params.Arguments["nodeId"].(string)
+		nodeID, _ := req.GetArguments()["nodeId"].(string)
 		resp, err := node.Send(ctx, "get_node", []string{nodeID}, nil)
 		return renderResponse(resp, err)
 	})
@@ -50,7 +50,7 @@ func RegisterTools(s *server.MCPServer, node *Node) {
 			mcp.Description("List of node IDs in colon format e.g. ['4029:12345', '4029:67890']"),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		raw, _ := req.Params.Arguments["nodeIds"].([]interface{})
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
 		nodeIDs := toStringSlice(raw)
 		resp, err := node.Send(ctx, "get_nodes_info", nodeIDs, nil)
 		return renderResponse(resp, err)
@@ -63,7 +63,7 @@ func RegisterTools(s *server.MCPServer, node *Node) {
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		params := map[string]interface{}{}
-		if d, ok := req.Params.Arguments["depth"].(float64); ok && d > 0 {
+		if d, ok := req.GetArguments()["depth"].(float64); ok && d > 0 {
 			params["depth"] = d
 		}
 		resp, err := node.Send(ctx, "get_design_context", nil, params)
@@ -77,7 +77,7 @@ func RegisterTools(s *server.MCPServer, node *Node) {
 			mcp.Description("Root node ID to scan from, colon format e.g. '4029:12345'"),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		nodeID, _ := req.Params.Arguments["nodeId"].(string)
+		nodeID, _ := req.GetArguments()["nodeId"].(string)
 		resp, err := node.Send(ctx, "scan_text_nodes", nil, map[string]interface{}{"nodeId": nodeID})
 		return renderResponse(resp, err)
 	})
@@ -93,8 +93,8 @@ func RegisterTools(s *server.MCPServer, node *Node) {
 			mcp.Description("Node types to find e.g. ['FRAME', 'COMPONENT', 'INSTANCE']"),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		nodeID, _ := req.Params.Arguments["nodeId"].(string)
-		raw, _ := req.Params.Arguments["types"].([]interface{})
+		nodeID, _ := req.GetArguments()["nodeId"].(string)
+		raw, _ := req.GetArguments()["types"].([]interface{})
 		resp, err := node.Send(ctx, "scan_nodes_by_types", nil, map[string]interface{}{
 			"nodeId": nodeID,
 			"types":  raw,
@@ -123,7 +123,7 @@ func RegisterTools(s *server.MCPServer, node *Node) {
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		params := map[string]interface{}{}
-		if id, ok := req.Params.Arguments["nodeId"].(string); ok && id != "" {
+		if id, ok := req.GetArguments()["nodeId"].(string); ok && id != "" {
 			params["nodeId"] = id
 		}
 		resp, err := node.Send(ctx, "get_annotations", nil, params)
@@ -144,13 +144,13 @@ func RegisterTools(s *server.MCPServer, node *Node) {
 			mcp.Description("Export scale for raster formats (default 2)"),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		raw, _ := req.Params.Arguments["nodeIds"].([]interface{})
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
 		nodeIDs := toStringSlice(raw)
 		params := map[string]interface{}{}
-		if f, ok := req.Params.Arguments["format"].(string); ok && f != "" {
+		if f, ok := req.GetArguments()["format"].(string); ok && f != "" {
 			params["format"] = f
 		}
-		if s, ok := req.Params.Arguments["scale"].(float64); ok && s > 0 {
+		if s, ok := req.GetArguments()["scale"].(float64); ok && s > 0 {
 			params["scale"] = s
 		}
 		resp, err := node.Send(ctx, "get_screenshot", nodeIDs, params)
@@ -261,9 +261,9 @@ type saveResult struct {
 }
 
 func executeSaveScreenshots(ctx context.Context, node *Node, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	rawItems, _ := req.Params.Arguments["items"].([]interface{})
-	defaultFormat, _ := req.Params.Arguments["format"].(string)
-	defaultScale, _ := req.Params.Arguments["scale"].(float64)
+	rawItems, _ := req.GetArguments()["items"].([]interface{})
+	defaultFormat, _ := req.GetArguments()["format"].(string)
+	defaultScale, _ := req.GetArguments()["scale"].(float64)
 
 	workDir, err := os.Getwd()
 	if err != nil {
@@ -290,13 +290,16 @@ func executeSaveScreenshots(ctx context.Context, node *Node, req mcp.CallToolReq
 		}
 	}
 
-	out, _ := json.Marshal(map[string]interface{}{
+	out, err := json.Marshal(map[string]interface{}{
 		"total":     len(results),
 		"succeeded": succeeded,
 		"failed":    failed,
 		"hasErrors": failed > 0,
 		"results":   results,
 	})
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("marshal results: %v", err)), nil
+	}
 	return mcp.NewToolResultText(string(out)), nil
 }
 

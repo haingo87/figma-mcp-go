@@ -59,7 +59,9 @@ func (b *Bridge) HandleUpgrade(w http.ResponseWriter, r *http.Request) {
 	b.mu.Lock()
 	replaced := b.conn != nil
 	if replaced {
-		b.conn.Close(websocket.StatusNormalClosure, "replaced by new connection")
+		if err := b.conn.Close(websocket.StatusNormalClosure, "replaced by new connection"); err != nil {
+			bridgeLogger.Printf("close previous connection error: %v", err)
+		}
 	}
 	b.conn = conn
 	b.mu.Unlock()
@@ -209,7 +211,9 @@ func (b *Bridge) Close() {
 	}
 
 	if b.conn != nil {
-		b.conn.Close(websocket.StatusNormalClosure, "bridge closed")
+		if err := b.conn.Close(websocket.StatusNormalClosure, "bridge closed"); err != nil {
+			bridgeLogger.Printf("close connection error: %v", err)
+		}
 		b.conn = nil
 	}
 }
