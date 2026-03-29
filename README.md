@@ -11,6 +11,8 @@ A free, open-source Figma MCP server that reads and writes Figma files directly 
 - Supports multiple AI tools simultaneously
 - Written in Go, distributed via npm
 
+https://github.com/user-attachments/assets/17bda971-0e83-4f18-8758-8ac2b8dcba62
+
 ---
 
 ## Why this exists
