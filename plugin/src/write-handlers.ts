@@ -71,7 +71,7 @@ export const handleWriteRequest = async (request: any) => {
       await figma.loadFontAsync({ family: fontFamily, style: fontStyle });
       const textNode = figma.createText();
       textNode.fontName = { family: fontFamily, style: fontStyle };
-      if (p.fontSize) textNode.fontSize = p.fontSize;
+      if (p.fontSize != null) textNode.fontSize = Number(p.fontSize);
       textNode.characters = p.text || "";
       textNode.x = p.x != null ? p.x : 0;
       textNode.y = p.y != null ? p.y : 0;
@@ -408,16 +408,16 @@ export const handleWriteRequest = async (request: any) => {
       const style = figma.createTextStyle();
       style.name = p.name;
       style.fontName = { family, style: fontStyle };
-      if (p.fontSize != null) style.fontSize = p.fontSize;
+      if (p.fontSize != null) style.fontSize = Number(p.fontSize);
       if (p.description) style.description = p.description;
       if (p.textDecoration && p.textDecoration !== "NONE") {
         style.textDecoration = p.textDecoration;
       }
       if (p.lineHeightValue != null) {
-        style.lineHeight = { value: p.lineHeightValue, unit: p.lineHeightUnit || "PIXELS" };
+        style.lineHeight = { value: Number(p.lineHeightValue), unit: p.lineHeightUnit || "PIXELS" };
       }
       if (p.letterSpacingValue != null) {
-        style.letterSpacing = { value: p.letterSpacingValue, unit: p.letterSpacingUnit || "PIXELS" };
+        style.letterSpacing = { value: Number(p.letterSpacingValue), unit: p.letterSpacingUnit || "PIXELS" };
       }
       figma.commitUndo();
       return {
@@ -437,19 +437,19 @@ export const handleWriteRequest = async (request: any) => {
       const effectType = p.type || "DROP_SHADOW";
       let effect: Effect;
       if (effectType === "LAYER_BLUR") {
-        effect = { type: "LAYER_BLUR", blurType: "NORMAL", radius: p.radius ?? 4, visible: true };
+        effect = { type: "LAYER_BLUR", blurType: "NORMAL", radius: Number(p.radius ?? 4), visible: true };
       } else if (effectType === "BACKGROUND_BLUR") {
-        effect = { type: "BACKGROUND_BLUR", blurType: "NORMAL", radius: p.radius ?? 4, visible: true };
+        effect = { type: "BACKGROUND_BLUR", blurType: "NORMAL", radius: Number(p.radius ?? 4), visible: true };
       } else {
         // DROP_SHADOW or INNER_SHADOW
         const { r, g, b, a } = hexToRgb(p.color || "#000000");
-        const alpha = p.opacity != null ? p.opacity : (a !== 1 ? a : 0.25);
+        const alpha = p.opacity != null ? Number(p.opacity) : (a !== 1 ? a : 0.25);
         effect = {
           type: effectType as "DROP_SHADOW" | "INNER_SHADOW",
           color: { r, g, b, a: alpha },
-          offset: { x: p.offsetX ?? 0, y: p.offsetY ?? 4 },
-          radius: p.radius ?? 8,
-          spread: p.spread ?? 0,
+          offset: { x: Number(p.offsetX ?? 0), y: Number(p.offsetY ?? 4) },
+          radius: Number(p.radius ?? 8),
+          spread: Number(p.spread ?? 0),
           visible: true,
           blendMode: "NORMAL",
         };
@@ -478,9 +478,9 @@ export const handleWriteRequest = async (request: any) => {
       if (pattern === "COLUMNS" || pattern === "ROWS") {
         grid = {
           pattern,
-          count: p.count ?? 12,
-          gutterSize: p.gutterSize ?? 16,
-          offset: p.offset ?? 0,
+          count: Number(p.count ?? 12),
+          gutterSize: Number(p.gutterSize ?? 16),
+          offset: Number(p.offset ?? 0),
           alignment: p.alignment || "STRETCH",
           visible: true,
         };
@@ -489,9 +489,9 @@ export const handleWriteRequest = async (request: any) => {
         const { r, g, b, a } = hexToRgb(p.color || "#FF0000");
         grid = {
           pattern: "GRID",
-          sectionSize: p.sectionSize ?? 8,
+          sectionSize: Number(p.sectionSize ?? 8),
           visible: true,
-          color: { r, g, b, a: p.opacity != null ? p.opacity : (a !== 1 ? a : 0.1) },
+          color: { r, g, b, a: p.opacity != null ? Number(p.opacity) : (a !== 1 ? a : 0.1) },
         };
       }
       const style = figma.createGridStyle();
@@ -658,11 +658,11 @@ export const handleWriteRequest = async (request: any) => {
 // are gated on layoutMode being active — padding and spacing are always valid.
 const applyAutoLayout = (frame: FrameNode, p: any) => {
   if (p.layoutMode != null) frame.layoutMode = p.layoutMode;
-  if (p.paddingTop != null) frame.paddingTop = p.paddingTop;
-  if (p.paddingRight != null) frame.paddingRight = p.paddingRight;
-  if (p.paddingBottom != null) frame.paddingBottom = p.paddingBottom;
-  if (p.paddingLeft != null) frame.paddingLeft = p.paddingLeft;
-  if (p.itemSpacing != null) frame.itemSpacing = p.itemSpacing;
+  if (p.paddingTop != null) frame.paddingTop = Number(p.paddingTop);
+  if (p.paddingRight != null) frame.paddingRight = Number(p.paddingRight);
+  if (p.paddingBottom != null) frame.paddingBottom = Number(p.paddingBottom);
+  if (p.paddingLeft != null) frame.paddingLeft = Number(p.paddingLeft);
+  if (p.itemSpacing != null) frame.itemSpacing = Number(p.itemSpacing);
   if (frame.layoutMode !== "NONE") {
     if (p.primaryAxisAlignItems) frame.primaryAxisAlignItems = p.primaryAxisAlignItems;
     if (p.counterAxisAlignItems) frame.counterAxisAlignItems = p.counterAxisAlignItems;
@@ -670,7 +670,7 @@ const applyAutoLayout = (frame: FrameNode, p: any) => {
     if (p.counterAxisSizingMode) frame.counterAxisSizingMode = p.counterAxisSizingMode;
     if (p.layoutWrap) frame.layoutWrap = p.layoutWrap;
     if (p.counterAxisSpacing != null && frame.layoutWrap === "WRAP") {
-      frame.counterAxisSpacing = p.counterAxisSpacing;
+      frame.counterAxisSpacing = Number(p.counterAxisSpacing);
     }
   }
 };

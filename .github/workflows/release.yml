@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -51,11 +52,11 @@ jobs:
 
       - name: Package plugin
         run: |
-          mkdir -p plugin-dist
-          cp plugin/manifest.json plugin-dist/
-          cp plugin/dist/code.js plugin-dist/
-          cp plugin/dist/index.html plugin-dist/
-          zip -r plugin.zip plugin-dist/
+          mkdir -p plugin/dist
+          cp plugin/manifest.json plugin/
+          cp plugin/dist/code.js plugin/dist/
+          cp plugin/dist/index.html plugin/dist/
+          zip -r plugin.zip plugin/
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -77,3 +78,19 @@ jobs:
           cp ../README.md .
           npm version "$VERSION" --no-git-tag-version --allow-same-version
           npm publish --access public
+
+      - name: Set version in server.json
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish

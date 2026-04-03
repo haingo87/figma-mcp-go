@@ -6,7 +6,6 @@ CLAUDE.md
 .mcp.json
 .mcpregistry_github_token
 .mcpregistry_registry_token
-server.json
 
 # Go build artifacts
 /bin/
