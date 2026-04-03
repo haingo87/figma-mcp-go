@@ -51,12 +51,7 @@ jobs:
         run: bun install && bun run build
 
       - name: Package plugin
-        run: |
-          mkdir -p plugin/dist
-          cp plugin/manifest.json plugin/
-          cp plugin/dist/code.js plugin/dist/
-          cp plugin/dist/index.html plugin/dist/
-          zip -r plugin.zip plugin/
+        run: zip -r plugin.zip plugin/manifest.json plugin/dist/
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
