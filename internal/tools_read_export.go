@@ -2,6 +2,12 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -34,6 +40,27 @@ func registerReadExportTools(s *server.MCPServer, node *Node) {
 		return renderResponse(resp, err)
 	})
 
+	s.AddTool(mcp.NewTool("export_frames_to_pdf",
+		mcp.WithDescription("Export multiple frames as a single multi-page PDF file. Each frame becomes one page in order. Ideal for pitch decks, proposals, and slide exports."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Ordered list of frame node IDs to export as PDF pages, colon format e.g. '4029:12345'"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithString("outputPath",
+			mcp.Required(),
+			mcp.Description("File path to write the PDF to, must end in .pdf (relative to working directory or absolute)"),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		outputPath, _ := req.GetArguments()["outputPath"].(string)
+		if outputPath == "" {
+			return mcp.NewToolResultError("outputPath is required"), nil
+		}
+		return executeExportFramesToPDF(ctx, node, nodeIDs, outputPath)
+	})
+
 	s.AddTool(mcp.NewTool("save_screenshots",
 		mcp.WithDescription("Export screenshots for multiple nodes and save them to the local filesystem. Returns metadata only (no base64)."),
 		mcp.WithArray("items",
@@ -59,4 +86,61 @@ func registerReadExportTools(s *server.MCPServer, node *Node) {
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return executeSaveScreenshots(ctx, node, req)
 	})
+}
+
+func executeExportFramesToPDF(ctx context.Context, node *Node, nodeIDs []string, outputPath string) (*mcp.CallToolResult, error) {
+	workDir, err := os.Getwd()
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("getwd: %v", err)), nil
+	}
+	resolvedPath, err := resolveOutputPath(outputPath, workDir)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	if strings.ToLower(filepath.Ext(resolvedPath)) != ".pdf" {
+		return mcp.NewToolResultError("outputPath must have a .pdf extension"), nil
+	}
+
+	resp, err := node.Send(ctx, "export_frames_to_pdf", nodeIDs, nil)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	if resp.Error != "" {
+		return mcp.NewToolResultError(resp.Error), nil
+	}
+
+	b64, err := extractPDFBase64(resp.Data)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	bytesWritten, err := writeBase64(b64, resolvedPath)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	out, _ := json.Marshal(map[string]interface{}{
+		"outputPath":   resolvedPath,
+		"bytesWritten": bytesWritten,
+		"pageCount":    len(nodeIDs),
+		"success":      true,
+	})
+	return mcp.NewToolResultText(string(out)), nil
+}
+
+func extractPDFBase64(data interface{}) (string, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	var wrapper struct {
+		Base64 string `json:"base64"`
+	}
+	if err := json.Unmarshal(b, &wrapper); err != nil {
+		return "", err
+	}
+	if wrapper.Base64 == "" {
+		return "", errors.New("no PDF data returned by plugin")
+	}
+	return wrapper.Base64, nil
 }

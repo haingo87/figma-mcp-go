@@ -7,7 +7,7 @@ Open-source Figma MCP server with full read/write access via plugin — no REST 
 **Highlights**
 - No Figma API token required
 - No rate limits — free plan friendly
-- **Read and Write** live Figma data via plugin bridge — 57 tools total
+- **Read and Write** live Figma data via plugin bridge — 58 tools total
 - Full design automation — styles, variables, components, prototypes, and content
 - Design strategies included — read_design_strategy, design_strategy, and more prompts built in
 
@@ -190,6 +190,7 @@ claude mcp add -s project figma-mcp-go -- npx -y @vkhanhqui/figma-mcp-go@latest
 |------|-------------|
 | `get_screenshot` | Base64 image export of any node |
 | `save_screenshots` | Export images to disk (server-side, no API call) |
+| `export_frames_to_pdf` | Export multiple frames as a single multi-page PDF file saved to disk |
 | `export_tokens` | Export design tokens (variables + paint styles) as JSON or CSS |
 
 ### MCP Prompts

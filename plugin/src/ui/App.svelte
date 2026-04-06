@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { PDFDocument } from "pdf-lib";
 
   let connected = false;
   let fileName = "—";
@@ -54,6 +55,48 @@
     };
   }
 
+  function base64ToUint8Array(b64: string): Uint8Array {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function uint8ArrayToBase64(bytes: Uint8Array): string {
+    let binary = "";
+    const chunk = 8192;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
+  async function mergeFramePdfs(msg: any): Promise<void> {
+    const frames: Array<{ base64: string }> = msg.data?.frames ?? [];
+    try {
+      const merged = await PDFDocument.create();
+      for (const frame of frames) {
+        const srcDoc = await PDFDocument.load(base64ToUint8Array(frame.base64));
+        const [page] = await merged.copyPages(srcDoc, [0]);
+        merged.addPage(page);
+      }
+      const mergedBytes = await merged.save();
+      const out = {
+        type: msg.type,
+        requestId: msg.requestId,
+        data: { base64: uint8ArrayToBase64(mergedBytes), pageCount: frames.length },
+      };
+      if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(out));
+    } catch (err) {
+      const out = {
+        type: msg.type,
+        requestId: msg.requestId,
+        error: err instanceof Error ? err.message : String(err),
+      };
+      if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(out));
+    }
+  }
+
   function handleMessage(event: MessageEvent) {
     const msg = event.data?.pluginMessage;
     if (!msg) return;
@@ -69,6 +112,10 @@
       if (msg.type !== "progress_update") {
         activeRequests.delete(msg.requestId);
         activeRequests = activeRequests;
+      }
+      if (msg.type === "export_frames_to_pdf" && !msg.error) {
+        mergeFramePdfs(msg);
+        return;
       }
       if (socket?.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(msg));

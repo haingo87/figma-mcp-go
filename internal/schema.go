@@ -50,6 +50,16 @@ func ValidateRPC(tool string, nodeIDs []string, params map[string]interface{}) s
 			}
 		}
 
+	case "export_frames_to_pdf":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required and must not be empty"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+
 	case "get_screenshot":
 		for _, id := range nodeIDs {
 			if !ValidNodeID(id) {
