@@ -1,6 +1,12 @@
 # figma-mcp-go
 
-Figma MCP — Free, No Rate Limits
+Figma MCP — Free, No Rate Limits [![vkhanhqui/figma-mcp-go server](https://glama.ai/mcp/servers/vkhanhqui/figma-mcp-go/badges/score.svg)](https://glama.ai/mcp/servers/vkhanhqui/figma-mcp-go)
+<p>
+  <a href="https://www.npmjs.com/package/@vkhanhqui/figma-mcp-go"><img src="https://img.shields.io/npm/v/@vkhanhqui/figma-mcp-go?color=blue" alt="npm version" /></a>
+  <a href="https://registry.modelcontextprotocol.io/?q=figma-mcp-go"><img src="https://img.shields.io/badge/MCP-Registry-purple" alt="MCP Registry" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
+  <a href="https://github.com/vkhanhqui/figma-mcp-go/stargazers"><img src="https://img.shields.io/github/stars/vkhanhqui/figma-mcp-go?style=social" alt="GitHub stars" /></a>
+</p>
 
 Open-source Figma MCP server with full read/write access via plugin — no REST API, no rate limits. Turn text into designs and designs into real code. Works with Cursor, Claude, GitHub Copilot, and any MCP-compatible AI tool.
 
