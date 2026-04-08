@@ -149,6 +149,23 @@ export const handleWriteCreateRequest = async (request: any) => {
       };
     }
 
+    case "create_section": {
+      const p = request.params || {};
+      const section = figma.createSection();
+      if (p.name) section.name = p.name;
+      if (p.x != null) section.x = p.x;
+      if (p.y != null) section.y = p.y;
+      if (p.width != null || p.height != null) {
+        section.resizeWithoutConstraints(p.width || section.width, p.height || section.height);
+      }
+      figma.commitUndo();
+      return {
+        type: request.type,
+        requestId: request.requestId,
+        data: { id: section.id, name: section.name, type: section.type, bounds: getBounds(section) },
+      };
+    }
+
     default:
       return null;
   }

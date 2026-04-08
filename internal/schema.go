@@ -7,8 +7,9 @@ import (
 )
 
 // nodeIDPattern matches Figma node IDs:
-//   simple:   "4029:12345"
-//   compound: "I2167:9091;186:1579;186:1745" (instances/variants)
+//
+//	simple:   "4029:12345"
+//	compound: "I2167:9091;186:1579;186:1745" (instances/variants)
 var nodeIDPattern = regexp.MustCompile(`^I?\d+:\d+(;\d+:\d+)*$`)
 
 // NormalizeNodeID converts hyphen-format node IDs (LLM output artifact) to colon format.
@@ -621,6 +622,220 @@ func ValidateRPC(tool string, nodeIDs []string, params map[string]interface{}) s
 					return fmt.Sprintf("indices[%d] must be a number", i)
 				}
 			}
+		}
+
+	// ── Node Control ────────────────────────────────────────────────
+
+	case "set_visible":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+		if _, ok := params["visible"].(bool); !ok {
+			return "visible (boolean) is required"
+		}
+
+	case "lock_nodes", "unlock_nodes":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+
+	case "rotate_nodes":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+		if _, ok := params["rotation"].(float64); !ok {
+			return "rotation (degrees) is required"
+		}
+
+	case "reorder_nodes":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+		order, _ := params["order"].(string)
+		switch order {
+		case "bringToFront", "sendToBack", "bringForward", "sendBackward":
+		default:
+			return fmt.Sprintf("order must be bringToFront, sendToBack, bringForward, or sendBackward, got: %s", order)
+		}
+
+	case "set_blend_mode":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+		blendMode, _ := params["blendMode"].(string)
+		if blendMode == "" {
+			return "blendMode is required"
+		}
+		validBlendModes := map[string]bool{
+			"NORMAL": true, "MULTIPLY": true, "SCREEN": true, "OVERLAY": true,
+			"DARKEN": true, "LIGHTEN": true, "COLOR_DODGE": true, "COLOR_BURN": true,
+			"HARD_LIGHT": true, "SOFT_LIGHT": true, "DIFFERENCE": true, "EXCLUSION": true,
+			"HUE": true, "SATURATION": true, "COLOR": true, "LUMINOSITY": true,
+			"PASS_THROUGH": true,
+		}
+		if !validBlendModes[blendMode] {
+			return fmt.Sprintf("blendMode %q is not a valid Figma blend mode", blendMode)
+		}
+
+	case "set_constraints":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+		_, hasH := params["horizontal"]
+		_, hasV := params["vertical"]
+		if !hasH && !hasV {
+			return "at least one of horizontal or vertical is required"
+		}
+		if h, ok := params["horizontal"].(string); ok && h != "" {
+			switch h {
+			case "MIN", "MAX", "CENTER", "STRETCH", "SCALE":
+			default:
+				return fmt.Sprintf("horizontal must be MIN, MAX, CENTER, STRETCH, or SCALE, got: %s", h)
+			}
+		}
+		if v, ok := params["vertical"].(string); ok && v != "" {
+			switch v {
+			case "MIN", "MAX", "CENTER", "STRETCH", "SCALE":
+			default:
+				return fmt.Sprintf("vertical must be MIN, MAX, CENTER, STRETCH, or SCALE, got: %s", v)
+			}
+		}
+
+	case "reparent_nodes":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+		parentID, _ := params["parentId"].(string)
+		if parentID == "" {
+			return "parentId is required"
+		}
+		if !ValidNodeID(parentID) {
+			return fmt.Sprintf("parentId must use colon format e.g. 4029:12345, got: %s", parentID)
+		}
+
+	case "batch_rename_nodes":
+		if len(nodeIDs) == 0 {
+			return "nodeIds is required"
+		}
+		for _, id := range nodeIDs {
+			if !ValidNodeID(id) {
+				return fmt.Sprintf("invalid nodeId: %s — must use colon format e.g. 4029:12345", id)
+			}
+		}
+		_, hasFind := params["find"]
+		_, hasReplace := params["replace"]
+		_, hasPrefix := params["prefix"]
+		_, hasSuffix := params["suffix"]
+		if !hasFind && !hasReplace && !hasPrefix && !hasSuffix {
+			return "at least one of find/replace, prefix, or suffix is required"
+		}
+		if hasFind && !hasReplace {
+			return "replace is required when find is provided"
+		}
+
+	case "find_replace_text":
+		find, _ := params["find"].(string)
+		if find == "" {
+			return "find is required"
+		}
+		if _, ok := params["replace"]; !ok {
+			return "replace is required"
+		}
+		if nodeID, ok := params["nodeId"].(string); ok && nodeID != "" && !ValidNodeID(nodeID) {
+			return fmt.Sprintf("nodeId must use colon format e.g. 4029:12345, got: %s", nodeID)
+		}
+		if len(nodeIDs) > 0 && nodeIDs[0] != "" && !ValidNodeID(nodeIDs[0]) {
+			return fmt.Sprintf("nodeId must use colon format e.g. 4029:12345, got: %s", nodeIDs[0])
+		}
+
+	// ── Page management ─────────────────────────────────────────────
+
+	case "add_page":
+		if idx, ok := params["index"].(float64); ok && idx < 0 {
+			return "index must be non-negative"
+		}
+
+	case "delete_page", "rename_page":
+		pageID, _ := params["pageId"].(string)
+		pageName, _ := params["pageName"].(string)
+		if pageID == "" && pageName == "" {
+			return "pageId or pageName is required"
+		}
+		if tool == "rename_page" {
+			if newName, _ := params["newName"].(string); newName == "" {
+				return "newName is required"
+			}
+		}
+
+	case "set_effects":
+		if len(nodeIDs) == 0 || nodeIDs[0] == "" {
+			return "nodeId is required"
+		}
+		if !ValidNodeID(nodeIDs[0]) {
+			return fmt.Sprintf("nodeId must use colon format e.g. 4029:12345, got: %s", nodeIDs[0])
+		}
+		effects, ok := params["effects"]
+		if !ok {
+			return "effects array is required"
+		}
+		effectList, ok := effects.([]interface{})
+		if !ok {
+			return "effects must be an array"
+		}
+		for i, e := range effectList {
+			em, ok := e.(map[string]interface{})
+			if !ok {
+				return fmt.Sprintf("effects[%d] must be an object", i)
+			}
+			t, _ := em["type"].(string)
+			switch t {
+			case "DROP_SHADOW", "INNER_SHADOW", "LAYER_BLUR", "BACKGROUND_BLUR":
+			default:
+				return fmt.Sprintf("effects[%d].type must be DROP_SHADOW, INNER_SHADOW, LAYER_BLUR, or BACKGROUND_BLUR, got: %s", i, t)
+			}
+		}
+
+	case "create_section":
+		if w, ok := params["width"].(float64); ok && w <= 0 {
+			return "width must be positive"
+		}
+		if h, ok := params["height"].(float64); ok && h <= 0 {
+			return "height must be positive"
 		}
 	}
 

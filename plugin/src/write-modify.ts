@@ -184,6 +184,219 @@ export const handleWriteModifyRequest = async (request: any) => {
       };
     }
 
+    case "set_visible": {
+      const p = request.params || {};
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        if (!("visible" in n)) { results.push({ nodeId: nid, error: "Node does not support visibility" }); continue; }
+        n.visible = p.visible;
+        results.push({ nodeId: nid, visible: n.visible });
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "lock_nodes":
+    case "unlock_nodes": {
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      const locked = request.type === "lock_nodes";
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        if (!("locked" in n)) { results.push({ nodeId: nid, error: "Node does not support locking" }); continue; }
+        n.locked = locked;
+        results.push({ nodeId: nid, locked: n.locked });
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "rotate_nodes": {
+      const p = request.params || {};
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        if (!("rotation" in n)) { results.push({ nodeId: nid, error: "Node does not support rotation" }); continue; }
+        n.rotation = p.rotation;
+        results.push({ nodeId: nid, rotation: n.rotation });
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "reorder_nodes": {
+      const p = request.params || {};
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      const validOrders = ["bringToFront", "sendToBack", "bringForward", "sendBackward"];
+      if (!validOrders.includes(p.order)) {
+        throw new Error(`order must be bringToFront, sendToBack, bringForward, or sendBackward`);
+      }
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        const parent = n.parent as any;
+        if (!parent || !("children" in parent)) { results.push({ nodeId: nid, error: "Node has no reorderable parent" }); continue; }
+        const siblings = parent.children as any[];
+        const currentIndex = siblings.indexOf(n);
+        let newIndex: number;
+        switch (p.order) {
+          case "bringToFront":   newIndex = siblings.length - 1; break;
+          case "sendToBack":     newIndex = 0; break;
+          case "bringForward":   newIndex = Math.min(currentIndex + 1, siblings.length - 1); break;
+          case "sendBackward":   newIndex = Math.max(currentIndex - 1, 0); break;
+          default:               newIndex = currentIndex;
+        }
+        parent.insertChild(newIndex, n);
+        results.push({ nodeId: nid, index: newIndex });
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "set_blend_mode": {
+      const p = request.params || {};
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        if (!("blendMode" in n)) { results.push({ nodeId: nid, error: "Node does not support blend mode" }); continue; }
+        n.blendMode = p.blendMode;
+        results.push({ nodeId: nid, blendMode: n.blendMode });
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "set_constraints": {
+      const p = request.params || {};
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        if (!("constraints" in n)) { results.push({ nodeId: nid, error: "Node does not support constraints" }); continue; }
+        const updated: any = { ...n.constraints };
+        if (p.horizontal) updated.horizontal = p.horizontal;
+        if (p.vertical)   updated.vertical   = p.vertical;
+        n.constraints = updated;
+        results.push({ nodeId: nid, constraints: n.constraints });
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "reparent_nodes": {
+      const p = request.params || {};
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      if (!p.parentId) throw new Error("parentId is required");
+      const newParent = await figma.getNodeByIdAsync(p.parentId) as any;
+      if (!newParent) throw new Error(`Parent not found: ${p.parentId}`);
+      if (!("appendChild" in newParent)) throw new Error(`Node ${p.parentId} cannot contain children`);
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        try {
+          newParent.appendChild(n);
+          results.push({ nodeId: nid, newParentId: p.parentId });
+        } catch (e: any) {
+          results.push({ nodeId: nid, error: e.message });
+        }
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "batch_rename_nodes": {
+      const p = request.params || {};
+      const nodeIds = request.nodeIds || [];
+      if (nodeIds.length === 0) throw new Error("nodeIds is required");
+      const results: any[] = [];
+      for (const nid of nodeIds) {
+        const n = await figma.getNodeByIdAsync(nid) as any;
+        if (!n) { results.push({ nodeId: nid, error: "Node not found" }); continue; }
+        const oldName: string = n.name;
+        let newName = oldName;
+        if (p.find !== undefined && p.replace !== undefined) {
+          if (p.useRegex) {
+            try {
+              const regex = new RegExp(p.find, p.regexFlags || "g");
+              newName = newName.replace(regex, p.replace);
+            } catch (e: any) {
+              results.push({ nodeId: nid, error: `Invalid regex: ${e.message}` }); continue;
+            }
+          } else {
+            newName = newName.split(p.find).join(p.replace);
+          }
+        }
+        if (p.prefix) newName = p.prefix + newName;
+        if (p.suffix) newName = newName + p.suffix;
+        n.name = newName;
+        results.push({ nodeId: nid, oldName, name: newName });
+      }
+      figma.commitUndo();
+      return { type: request.type, requestId: request.requestId, data: { results } };
+    }
+
+    case "find_replace_text": {
+      const p = request.params || {};
+      if (!p.find) throw new Error("find is required");
+      if (p.replace === undefined) throw new Error("replace is required");
+      const rootNodeId = request.nodeIds && request.nodeIds[0];
+      const root: any = rootNodeId
+        ? await figma.getNodeByIdAsync(rootNodeId)
+        : figma.currentPage;
+      if (!root) throw new Error(`Root node not found: ${rootNodeId}`);
+      const textNodes: any[] = [];
+      const collect = (node: any) => {
+        if (node.type === "TEXT") textNodes.push(node);
+        if ("children" in node) (node.children as any[]).forEach(collect);
+      };
+      collect(root);
+      const results: any[] = [];
+      for (const tn of textNodes) {
+        const originalText: string = tn.characters;
+        let newText: string;
+        if (p.useRegex) {
+          try {
+            const regex = new RegExp(p.find, p.regexFlags || "g");
+            newText = originalText.replace(regex, p.replace);
+          } catch (e: any) {
+            results.push({ nodeId: tn.id, nodeName: tn.name, error: `Invalid regex: ${e.message}` });
+            continue;
+          }
+        } else {
+          newText = originalText.split(p.find).join(p.replace);
+        }
+        if (newText !== originalText) {
+          const fontName = typeof tn.fontName === "symbol"
+            ? { family: "Inter", style: "Regular" }
+            : tn.fontName;
+          await figma.loadFontAsync(fontName);
+          tn.characters = newText;
+          results.push({ nodeId: tn.id, nodeName: tn.name, oldText: originalText, newText });
+        }
+      }
+      figma.commitUndo();
+      const successCount = results.filter((r: any) => !r.error).length;
+      return { type: request.type, requestId: request.requestId, data: { replaced: successCount, results } };
+    }
+
     default:
       return null;
   }

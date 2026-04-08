@@ -259,4 +259,213 @@ func registerWriteModifyTools(s *server.MCPServer, node *Node) {
 		resp, err := node.Send(ctx, "delete_nodes", nodeIDs, nil)
 		return renderResponse(resp, err)
 	})
+
+	s.AddTool(mcp.NewTool("set_visible",
+		mcp.WithDescription("Show or hide one or more nodes by setting their visibility."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithBoolean("visible",
+			mcp.Required(),
+			mcp.Description("true to show the node, false to hide it"),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		visible, _ := req.GetArguments()["visible"].(bool)
+		resp, err := node.Send(ctx, "set_visible", nodeIDs, map[string]interface{}{"visible": visible})
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("lock_nodes",
+		mcp.WithDescription("Lock one or more nodes to prevent accidental edits in Figma."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		resp, err := node.Send(ctx, "lock_nodes", nodeIDs, nil)
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("unlock_nodes",
+		mcp.WithDescription("Unlock one or more nodes, allowing them to be edited again."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		resp, err := node.Send(ctx, "unlock_nodes", nodeIDs, nil)
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("rotate_nodes",
+		mcp.WithDescription("Rotate one or more nodes to an absolute angle in degrees."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithNumber("rotation",
+			mcp.Required(),
+			mcp.Description("Rotation angle in degrees (positive = counter-clockwise in Figma)"),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		rotation, _ := req.GetArguments()["rotation"].(float64)
+		resp, err := node.Send(ctx, "rotate_nodes", nodeIDs, map[string]interface{}{"rotation": rotation})
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("reorder_nodes",
+		mcp.WithDescription("Change the z-order (layer stack position) of one or more nodes."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithString("order",
+			mcp.Required(),
+			mcp.Description("Order operation: bringToFront, sendToBack, bringForward, or sendBackward"),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		order, _ := req.GetArguments()["order"].(string)
+		resp, err := node.Send(ctx, "reorder_nodes", nodeIDs, map[string]interface{}{"order": order})
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("set_blend_mode",
+		mcp.WithDescription("Set the blend mode of one or more nodes (e.g. MULTIPLY, SCREEN, OVERLAY)."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithString("blendMode",
+			mcp.Required(),
+			mcp.Description("Blend mode: NORMAL, MULTIPLY, SCREEN, OVERLAY, DARKEN, LIGHTEN, COLOR_DODGE, COLOR_BURN, HARD_LIGHT, SOFT_LIGHT, DIFFERENCE, EXCLUSION, HUE, SATURATION, COLOR, LUMINOSITY, PASS_THROUGH"),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		blendMode, _ := req.GetArguments()["blendMode"].(string)
+		resp, err := node.Send(ctx, "set_blend_mode", nodeIDs, map[string]interface{}{"blendMode": blendMode})
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("set_constraints",
+		mcp.WithDescription("Set layout constraints (pinning behaviour) on one or more nodes relative to their parent."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithString("horizontal", mcp.Description("Horizontal constraint: MIN (left), MAX (right), CENTER, STRETCH, or SCALE")),
+		mcp.WithString("vertical", mcp.Description("Vertical constraint: MIN (top), MAX (bottom), CENTER, STRETCH, or SCALE")),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		params := map[string]interface{}{}
+		if h, ok := req.GetArguments()["horizontal"].(string); ok && h != "" {
+			params["horizontal"] = h
+		}
+		if v, ok := req.GetArguments()["vertical"].(string); ok && v != "" {
+			params["vertical"] = v
+		}
+		resp, err := node.Send(ctx, "set_constraints", nodeIDs, params)
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("reparent_nodes",
+		mcp.WithDescription("Move one or more nodes to a different parent frame, group, or section."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs to move in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithString("parentId",
+			mcp.Required(),
+			mcp.Description("Target parent node ID in colon format e.g. '4029:99'"),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		parentID, _ := req.GetArguments()["parentId"].(string)
+		parentID = NormalizeNodeID(parentID)
+		resp, err := node.Send(ctx, "reparent_nodes", nodeIDs, map[string]interface{}{"parentId": parentID})
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("batch_rename_nodes",
+		mcp.WithDescription("Rename multiple nodes using find/replace, regex substitution, or prefix/suffix addition."),
+		mcp.WithArray("nodeIds",
+			mcp.Required(),
+			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
+			mcp.WithStringItems(),
+		),
+		mcp.WithString("find", mcp.Description("String (or regex pattern when useRegex=true) to search for in the node name")),
+		mcp.WithString("replace", mcp.Description("Replacement string. Required when find is provided.")),
+		mcp.WithBoolean("useRegex", mcp.Description("Treat find as a regular expression (default false)")),
+		mcp.WithString("regexFlags", mcp.Description("Regex flags e.g. 'gi' (default 'g'). Only used when useRegex=true.")),
+		mcp.WithString("prefix", mcp.Description("String to prepend to the node name")),
+		mcp.WithString("suffix", mcp.Description("String to append to the node name")),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		raw, _ := req.GetArguments()["nodeIds"].([]interface{})
+		nodeIDs := toStringSlice(raw)
+		params := map[string]interface{}{}
+		for _, k := range []string{"find", "replace", "regexFlags", "prefix", "suffix"} {
+			if v, ok := req.GetArguments()[k].(string); ok {
+				params[k] = v
+			}
+		}
+		if v, ok := req.GetArguments()["useRegex"].(bool); ok {
+			params["useRegex"] = v
+		}
+		resp, err := node.Send(ctx, "batch_rename_nodes", nodeIDs, params)
+		return renderResponse(resp, err)
+	})
+
+	s.AddTool(mcp.NewTool("find_replace_text",
+		mcp.WithDescription("Find and replace text content across all TEXT nodes in a subtree. Searches the entire current page if no nodeId is given."),
+		mcp.WithString("find",
+			mcp.Required(),
+			mcp.Description("Text string (or regex pattern when useRegex=true) to search for"),
+		),
+		mcp.WithString("replace",
+			mcp.Required(),
+			mcp.Description("Replacement string (use empty string to delete matches)"),
+		),
+		mcp.WithString("nodeId", mcp.Description("Root node ID to scope the search. Defaults to the entire current page.")),
+		mcp.WithBoolean("useRegex", mcp.Description("Treat find as a regular expression (default false)")),
+		mcp.WithString("regexFlags", mcp.Description("Regex flags e.g. 'gi' (default 'g'). Only used when useRegex=true.")),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		params := map[string]interface{}{
+			"find":    req.GetArguments()["find"],
+			"replace": req.GetArguments()["replace"],
+		}
+		if v, ok := req.GetArguments()["useRegex"].(bool); ok {
+			params["useRegex"] = v
+		}
+		if v, ok := req.GetArguments()["regexFlags"].(string); ok && v != "" {
+			params["regexFlags"] = v
+		}
+		var nodeIDs []string
+		if nodeID, ok := req.GetArguments()["nodeId"].(string); ok && nodeID != "" {
+			nodeID = NormalizeNodeID(nodeID)
+			nodeIDs = []string{nodeID}
+		}
+		resp, err := node.Send(ctx, "find_replace_text", nodeIDs, params)
+		return renderResponse(resp, err)
+	})
 }

@@ -7,7 +7,7 @@ Open-source Figma MCP server with full read/write access via plugin — no REST 
 **Highlights**
 - No Figma API token required
 - No rate limits — free plan friendly
-- **Read and Write** live Figma data via plugin bridge — 58 tools total
+- **Read and Write** live Figma data via plugin bridge — 73 tools total
 - Full design automation — styles, variables, components, prototypes, and content
 - Design strategies included — read_design_strategy, design_strategy, and more prompts built in
 
@@ -95,6 +95,7 @@ claude mcp add -s project figma-mcp-go -- npx -y @vkhanhqui/figma-mcp-go@latest
 | `create_text` | Create a text node (font loaded automatically) |
 | `import_image` | Decode base64 image and place it as a rectangle fill |
 | `create_component` | Convert an existing FRAME node into a reusable component |
+| `create_section` | Create a Figma Section node to organise frames on a page |
 
 ### Write — Modify
 
@@ -106,10 +107,20 @@ claude mcp add -s project figma-mcp-go -- npx -y @vkhanhqui/figma-mcp-go@latest
 | `set_opacity` | Set opacity of one or more nodes (0 = transparent, 1 = opaque) |
 | `set_corner_radius` | Set corner radius — uniform or per-corner |
 | `set_auto_layout` | Set or update auto-layout (flex) properties on a frame |
+| `set_visible` | Show or hide one or more nodes |
+| `lock_nodes` | Lock one or more nodes to prevent accidental edits |
+| `unlock_nodes` | Unlock one or more nodes |
+| `rotate_nodes` | Set absolute rotation in degrees on one or more nodes |
+| `reorder_nodes` | Change z-order: `bringToFront`, `sendToBack`, `bringForward`, `sendBackward` |
+| `set_blend_mode` | Set blend mode (MULTIPLY, SCREEN, OVERLAY, …) on one or more nodes |
+| `set_constraints` | Set responsive constraints `{ horizontal, vertical }` on one or more nodes |
 | `move_nodes` | Move nodes to an absolute x/y position |
 | `resize_nodes` | Resize nodes by width and/or height |
 | `rename_node` | Rename a node |
 | `clone_node` | Clone a node, optionally repositioning or reparenting |
+| `reparent_nodes` | Move nodes to a different parent frame, group, or section |
+| `batch_rename_nodes` | Bulk rename nodes via find/replace, regex, or prefix/suffix |
+| `find_replace_text` | Find and replace text across all TEXT nodes in a subtree or page; supports regex |
 
 ### Write — Delete
 
@@ -128,6 +139,7 @@ claude mcp add -s project figma-mcp-go -- npx -y @vkhanhqui/figma-mcp-go@latest
 
 | Tool | Description |
 |------|-------------|
+| `set_effects` | Apply drop shadow / blur effects directly on a node (no style required) |
 | `create_paint_style` | Create a named paint style with a solid color |
 | `create_text_style` | Create a named text style with font, size, and spacing |
 | `create_effect_style` | Create a named effect style (drop shadow, inner shadow, blur) |
@@ -144,8 +156,16 @@ claude mcp add -s project figma-mcp-go -- npx -y @vkhanhqui/figma-mcp-go@latest
 | `add_variable_mode` | Add a new mode to an existing collection (e.g. Light/Dark) |
 | `create_variable` | Create a variable (COLOR/FLOAT/STRING/BOOLEAN) in a collection |
 | `set_variable_value` | Set a variable's value for a specific mode |
-| `bind_variable_to_node` | Bind a local variable to a node property |
+| `bind_variable_to_node` | Bind a variable to a node property — supports `fillColor`, `strokeColor`, `visible`, `opacity`, `rotation`, `width`, `height`, corner radii, spacing, and more |
 | `delete_variable` | Delete a variable or an entire collection |
+
+### Write — Pages
+
+| Tool | Description |
+|------|-------------|
+| `add_page` | Add a new page to the document (optional name and index) |
+| `delete_page` | Delete a page by ID or name (cannot delete the only page) |
+| `rename_page` | Rename a page by ID or current name |
 
 ### Write — Components & Navigation
 

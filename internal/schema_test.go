@@ -44,7 +44,7 @@ func TestNormalizeNodeID(t *testing.T) {
 		want  string
 	}{
 		{"4029-12345", "4029:12345"},
-		{"4029:12345", "4029:12345"},  // already valid, no-op
+		{"4029:12345", "4029:12345"},       // already valid, no-op
 		{"not-a-node-id", "not-a-node-id"}, // hyphen but not a node ID
 		{"", ""},
 	}
@@ -847,11 +847,11 @@ func TestValidateAutoLayoutParams_InvalidValues(t *testing.T) {
 
 	// All valid auto-layout params together
 	msg := ValidateRPC("create_frame", nil, map[string]interface{}{
-		"primaryAxisAlignItems":  "CENTER",
-		"counterAxisAlignItems":  "BASELINE",
-		"primaryAxisSizingMode":  "AUTO",
-		"counterAxisSizingMode":  "FIXED",
-		"layoutWrap":             "WRAP",
+		"primaryAxisAlignItems": "CENTER",
+		"counterAxisAlignItems": "BASELINE",
+		"primaryAxisSizingMode": "AUTO",
+		"counterAxisSizingMode": "FIXED",
+		"layoutWrap":            "WRAP",
 	})
 	if msg != "" {
 		t.Errorf("unexpected error for valid auto-layout params: %s", msg)
@@ -1013,5 +1013,316 @@ func TestValidateRPC_RemoveReactions(t *testing.T) {
 		"indices": []interface{}{float64(0), float64(2)},
 	}); msg != "" {
 		t.Errorf("unexpected error for valid indices: %s", msg)
+	}
+}
+
+// ── set_visible ─────────────────────────────────────────────────────
+
+func TestValidateRPC_SetVisible(t *testing.T) {
+	// missing nodeIds
+	if msg := ValidateRPC("set_visible", nil, map[string]interface{}{"visible": true}); msg == "" {
+		t.Error("expected error for missing nodeIds")
+	}
+	// invalid nodeId
+	if msg := ValidateRPC("set_visible", []string{"bad"}, map[string]interface{}{"visible": true}); msg == "" {
+		t.Error("expected error for invalid nodeId")
+	}
+	// missing visible
+	if msg := ValidateRPC("set_visible", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for missing visible")
+	}
+	// valid hide
+	if msg := ValidateRPC("set_visible", []string{"1:1"}, map[string]interface{}{"visible": false}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid show
+	if msg := ValidateRPC("set_visible", []string{"1:1"}, map[string]interface{}{"visible": true}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+// ── lock_nodes / unlock_nodes ───────────────────────────────────────
+
+func TestValidateRPC_LockUnlockNodes(t *testing.T) {
+	for _, tool := range []string{"lock_nodes", "unlock_nodes"} {
+		if msg := ValidateRPC(tool, nil, nil); msg == "" {
+			t.Errorf("%s: expected error for missing nodeIds", tool)
+		}
+		if msg := ValidateRPC(tool, []string{"bad"}, nil); msg == "" {
+			t.Errorf("%s: expected error for invalid nodeId", tool)
+		}
+		if msg := ValidateRPC(tool, []string{"1:1", "2:2"}, nil); msg != "" {
+			t.Errorf("%s: unexpected error: %s", tool, msg)
+		}
+	}
+}
+
+// ── rotate_nodes ───────────────────────────────────────────────────
+
+func TestValidateRPC_RotateNodes(t *testing.T) {
+	// missing nodeIds
+	if msg := ValidateRPC("rotate_nodes", nil, map[string]interface{}{"rotation": float64(45)}); msg == "" {
+		t.Error("expected error for missing nodeIds")
+	}
+	// invalid nodeId
+	if msg := ValidateRPC("rotate_nodes", []string{"bad"}, map[string]interface{}{"rotation": float64(45)}); msg == "" {
+		t.Error("expected error for invalid nodeId")
+	}
+	// missing rotation
+	if msg := ValidateRPC("rotate_nodes", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for missing rotation")
+	}
+	// valid
+	if msg := ValidateRPC("rotate_nodes", []string{"1:1"}, map[string]interface{}{"rotation": float64(-90)}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+// ── reorder_nodes ───────────────────────────────────────────────────
+
+func TestValidateRPC_ReorderNodes(t *testing.T) {
+	// missing nodeIds
+	if msg := ValidateRPC("reorder_nodes", nil, map[string]interface{}{"order": "bringToFront"}); msg == "" {
+		t.Error("expected error for missing nodeIds")
+	}
+	// invalid order
+	if msg := ValidateRPC("reorder_nodes", []string{"1:1"}, map[string]interface{}{"order": "up"}); msg == "" {
+		t.Error("expected error for invalid order")
+	}
+	// missing order (empty string falls through to default)
+	if msg := ValidateRPC("reorder_nodes", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for missing order")
+	}
+	// valid orders
+	for _, order := range []string{"bringToFront", "sendToBack", "bringForward", "sendBackward"} {
+		if msg := ValidateRPC("reorder_nodes", []string{"1:1"}, map[string]interface{}{"order": order}); msg != "" {
+			t.Errorf("unexpected error for order %q: %s", order, msg)
+		}
+	}
+}
+
+// ── set_blend_mode ─────────────────────────────────────────────────
+
+func TestValidateRPC_SetBlendMode(t *testing.T) {
+	// missing nodeIds
+	if msg := ValidateRPC("set_blend_mode", nil, map[string]interface{}{"blendMode": "MULTIPLY"}); msg == "" {
+		t.Error("expected error for missing nodeIds")
+	}
+	// missing blendMode
+	if msg := ValidateRPC("set_blend_mode", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for missing blendMode")
+	}
+	// invalid blendMode
+	if msg := ValidateRPC("set_blend_mode", []string{"1:1"}, map[string]interface{}{"blendMode": "GLOW"}); msg == "" {
+		t.Error("expected error for invalid blendMode")
+	}
+	// valid blend modes
+	for _, bm := range []string{"NORMAL", "MULTIPLY", "SCREEN", "OVERLAY", "PASS_THROUGH"} {
+		if msg := ValidateRPC("set_blend_mode", []string{"1:1"}, map[string]interface{}{"blendMode": bm}); msg != "" {
+			t.Errorf("unexpected error for blendMode %q: %s", bm, msg)
+		}
+	}
+}
+
+// ── set_constraints ────────────────────────────────────────────────
+
+func TestValidateRPC_SetConstraints(t *testing.T) {
+	// missing nodeIds
+	if msg := ValidateRPC("set_constraints", nil, map[string]interface{}{"horizontal": "CENTER"}); msg == "" {
+		t.Error("expected error for missing nodeIds")
+	}
+	// missing both horizontal and vertical
+	if msg := ValidateRPC("set_constraints", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for missing constraints")
+	}
+	// invalid horizontal
+	if msg := ValidateRPC("set_constraints", []string{"1:1"}, map[string]interface{}{"horizontal": "LEFT"}); msg == "" {
+		t.Error("expected error for invalid horizontal value")
+	}
+	// invalid vertical
+	if msg := ValidateRPC("set_constraints", []string{"1:1"}, map[string]interface{}{"vertical": "TOP"}); msg == "" {
+		t.Error("expected error for invalid vertical value")
+	}
+	// valid horizontal only
+	if msg := ValidateRPC("set_constraints", []string{"1:1"}, map[string]interface{}{"horizontal": "STRETCH"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid vertical only
+	if msg := ValidateRPC("set_constraints", []string{"1:1"}, map[string]interface{}{"vertical": "CENTER"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid both
+	if msg := ValidateRPC("set_constraints", []string{"1:1"}, map[string]interface{}{"horizontal": "MIN", "vertical": "MAX"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+// ── reparent_nodes ─────────────────────────────────────────────────
+
+func TestValidateRPC_ReparentNodes(t *testing.T) {
+	// missing nodeIds
+	if msg := ValidateRPC("reparent_nodes", nil, map[string]interface{}{"parentId": "2:2"}); msg == "" {
+		t.Error("expected error for missing nodeIds")
+	}
+	// missing parentId
+	if msg := ValidateRPC("reparent_nodes", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for missing parentId")
+	}
+	// invalid parentId
+	if msg := ValidateRPC("reparent_nodes", []string{"1:1"}, map[string]interface{}{"parentId": "bad"}); msg == "" {
+		t.Error("expected error for invalid parentId")
+	}
+	// valid
+	if msg := ValidateRPC("reparent_nodes", []string{"1:1"}, map[string]interface{}{"parentId": "2:2"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+// ── batch_rename_nodes ──────────────────────────────────────────────
+
+func TestValidateRPC_BatchRenameNodes(t *testing.T) {
+	// missing nodeIds
+	if msg := ValidateRPC("batch_rename_nodes", nil, map[string]interface{}{"prefix": "x"}); msg == "" {
+		t.Error("expected error for missing nodeIds")
+	}
+	// no operation provided
+	if msg := ValidateRPC("batch_rename_nodes", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for no rename operation")
+	}
+	// find without replace
+	if msg := ValidateRPC("batch_rename_nodes", []string{"1:1"}, map[string]interface{}{"find": "x"}); msg == "" {
+		t.Error("expected error for find without replace")
+	}
+	// valid prefix only
+	if msg := ValidateRPC("batch_rename_nodes", []string{"1:1"}, map[string]interface{}{"prefix": "UI/"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid find+replace
+	if msg := ValidateRPC("batch_rename_nodes", []string{"1:1"}, map[string]interface{}{"find": "Btn", "replace": "Button"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+// ── find_replace_text ───────────────────────────────────────────────
+
+func TestValidateRPC_FindReplaceText(t *testing.T) {
+	// missing find
+	if msg := ValidateRPC("find_replace_text", nil, map[string]interface{}{"replace": "x"}); msg == "" {
+		t.Error("expected error for missing find")
+	}
+	// missing replace
+	if msg := ValidateRPC("find_replace_text", nil, map[string]interface{}{"find": "x"}); msg == "" {
+		t.Error("expected error for missing replace")
+	}
+	// valid minimal
+	if msg := ValidateRPC("find_replace_text", nil, map[string]interface{}{"find": "x", "replace": "y"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid with empty replace (delete matches)
+	if msg := ValidateRPC("find_replace_text", nil, map[string]interface{}{"find": "x", "replace": ""}); msg != "" {
+		t.Errorf("unexpected error for empty replace: %s", msg)
+	}
+}
+
+// ── Page management ─────────────────────────────────────────────────
+
+func TestValidateRPC_AddPage(t *testing.T) {
+	// valid with no params
+	if msg := ValidateRPC("add_page", nil, nil); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// negative index
+	if msg := ValidateRPC("add_page", nil, map[string]interface{}{"index": float64(-1)}); msg == "" {
+		t.Error("expected error for negative index")
+	}
+	// valid with name
+	if msg := ValidateRPC("add_page", nil, map[string]interface{}{"name": "Flows"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+func TestValidateRPC_DeletePage(t *testing.T) {
+	// missing both pageId and pageName
+	if msg := ValidateRPC("delete_page", nil, nil); msg == "" {
+		t.Error("expected error for missing page identifier")
+	}
+	// valid with pageId
+	if msg := ValidateRPC("delete_page", nil, map[string]interface{}{"pageId": "0:2"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid with pageName
+	if msg := ValidateRPC("delete_page", nil, map[string]interface{}{"pageName": "Flows"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+func TestValidateRPC_RenamePage(t *testing.T) {
+	// missing page identifier
+	if msg := ValidateRPC("rename_page", nil, map[string]interface{}{"newName": "X"}); msg == "" {
+		t.Error("expected error for missing page identifier")
+	}
+	// missing newName
+	if msg := ValidateRPC("rename_page", nil, map[string]interface{}{"pageId": "0:2"}); msg == "" {
+		t.Error("expected error for missing newName")
+	}
+	// valid
+	if msg := ValidateRPC("rename_page", nil, map[string]interface{}{"pageId": "0:2", "newName": "Sprint 1"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+func TestValidateRPC_SetEffects(t *testing.T) {
+	// missing nodeId
+	if msg := ValidateRPC("set_effects", nil, map[string]interface{}{"effects": []interface{}{}}); msg == "" {
+		t.Error("expected error for missing nodeId")
+	}
+	// missing effects
+	if msg := ValidateRPC("set_effects", []string{"1:1"}, nil); msg == "" {
+		t.Error("expected error for missing effects")
+	}
+	// effects not an array
+	if msg := ValidateRPC("set_effects", []string{"1:1"}, map[string]interface{}{"effects": "shadow"}); msg == "" {
+		t.Error("expected error for non-array effects")
+	}
+	// invalid effect type
+	if msg := ValidateRPC("set_effects", []string{"1:1"}, map[string]interface{}{
+		"effects": []interface{}{map[string]interface{}{"type": "GLOW"}},
+	}); msg == "" {
+		t.Error("expected error for invalid effect type")
+	}
+	// valid empty effects (clear all)
+	if msg := ValidateRPC("set_effects", []string{"1:1"}, map[string]interface{}{"effects": []interface{}{}}); msg != "" {
+		t.Errorf("unexpected error for empty effects: %s", msg)
+	}
+	// valid drop shadow
+	if msg := ValidateRPC("set_effects", []string{"1:1"}, map[string]interface{}{
+		"effects": []interface{}{map[string]interface{}{"type": "DROP_SHADOW"}},
+	}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid layer blur
+	if msg := ValidateRPC("set_effects", []string{"1:1"}, map[string]interface{}{
+		"effects": []interface{}{map[string]interface{}{"type": "LAYER_BLUR", "radius": float64(4)}},
+	}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+}
+
+func TestValidateRPC_CreateSection(t *testing.T) {
+	// valid with no params
+	if msg := ValidateRPC("create_section", nil, nil); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// valid with name
+	if msg := ValidateRPC("create_section", nil, map[string]interface{}{"name": "Sprint 1"}); msg != "" {
+		t.Errorf("unexpected error: %s", msg)
+	}
+	// invalid width
+	if msg := ValidateRPC("create_section", nil, map[string]interface{}{"width": float64(-10)}); msg == "" {
+		t.Error("expected error for negative width")
+	}
+	// invalid height
+	if msg := ValidateRPC("create_section", nil, map[string]interface{}{"height": float64(0)}); msg == "" {
+		t.Error("expected error for zero height")
 	}
 }

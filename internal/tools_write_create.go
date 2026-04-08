@@ -145,4 +145,32 @@ func registerWriteCreateTools(s *server.MCPServer, node *Node) {
 		resp, err := node.Send(ctx, "create_component", []string{nodeID}, params)
 		return renderResponse(resp, err)
 	})
+
+	s.AddTool(mcp.NewTool("create_section",
+		mcp.WithDescription("Create a Figma Section node on the current page. Sections are the modern way to organize frames and groups on a page."),
+		mcp.WithString("name", mcp.Description("Section name (default 'Section')")),
+		mcp.WithNumber("x", mcp.Description("X position (default 0)")),
+		mcp.WithNumber("y", mcp.Description("Y position (default 0)")),
+		mcp.WithNumber("width", mcp.Description("Width in pixels")),
+		mcp.WithNumber("height", mcp.Description("Height in pixels")),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		params := map[string]interface{}{}
+		if name, ok := req.GetArguments()["name"].(string); ok && name != "" {
+			params["name"] = name
+		}
+		if x, ok := req.GetArguments()["x"].(float64); ok {
+			params["x"] = x
+		}
+		if y, ok := req.GetArguments()["y"].(float64); ok {
+			params["y"] = y
+		}
+		if w, ok := req.GetArguments()["width"].(float64); ok {
+			params["width"] = w
+		}
+		if h, ok := req.GetArguments()["height"].(float64); ok {
+			params["height"] = h
+		}
+		resp, err := node.Send(ctx, "create_section", nil, params)
+		return renderResponse(resp, err)
+	})
 }

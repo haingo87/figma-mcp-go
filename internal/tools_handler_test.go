@@ -289,3 +289,105 @@ func TestHandlers_LinkedTools(t *testing.T) {
 
 	callTool(t, s, "bind_variable_to_node", map[string]any{"nodeId": "1:1", "variableId": "v1", "field": "fills"})
 }
+
+func TestHandlers_NodeControlTools(t *testing.T) {
+	s, _ := newTestServer(t)
+
+	// set_visible — show
+	callTool(t, s, "set_visible", map[string]any{"nodeIds": []any{"1:1"}, "visible": true})
+	// set_visible — hide
+	callTool(t, s, "set_visible", map[string]any{"nodeIds": []any{"1:1", "2:2"}, "visible": false})
+
+	// lock_nodes
+	callTool(t, s, "lock_nodes", map[string]any{"nodeIds": []any{"1:1"}})
+	callTool(t, s, "lock_nodes", map[string]any{"nodeIds": []any{"1:1", "2:2"}})
+
+	// unlock_nodes
+	callTool(t, s, "unlock_nodes", map[string]any{"nodeIds": []any{"1:1"}})
+
+	// rotate_nodes
+	callTool(t, s, "rotate_nodes", map[string]any{"nodeIds": []any{"1:1"}, "rotation": float64(45)})
+	callTool(t, s, "rotate_nodes", map[string]any{"nodeIds": []any{"1:1"}, "rotation": float64(-90)})
+
+	// reorder_nodes
+	callTool(t, s, "reorder_nodes", map[string]any{"nodeIds": []any{"1:1"}, "order": "bringToFront"})
+	callTool(t, s, "reorder_nodes", map[string]any{"nodeIds": []any{"1:1"}, "order": "sendToBack"})
+	callTool(t, s, "reorder_nodes", map[string]any{"nodeIds": []any{"1:1"}, "order": "bringForward"})
+	callTool(t, s, "reorder_nodes", map[string]any{"nodeIds": []any{"1:1"}, "order": "sendBackward"})
+
+	// set_blend_mode
+	callTool(t, s, "set_blend_mode", map[string]any{"nodeIds": []any{"1:1"}, "blendMode": "MULTIPLY"})
+	callTool(t, s, "set_blend_mode", map[string]any{"nodeIds": []any{"1:1", "2:2"}, "blendMode": "SCREEN"})
+
+	// set_constraints
+	callTool(t, s, "set_constraints", map[string]any{"nodeIds": []any{"1:1"}, "horizontal": "STRETCH"})
+	callTool(t, s, "set_constraints", map[string]any{"nodeIds": []any{"1:1"}, "vertical": "CENTER"})
+	callTool(t, s, "set_constraints", map[string]any{"nodeIds": []any{"1:1"}, "horizontal": "MIN", "vertical": "MAX"})
+}
+
+// ── Write – page management tools ───────────────────────────────────
+
+func TestHandlers_PageManagementTools(t *testing.T) {
+	s, _ := newTestServer(t)
+
+	// add_page
+	callTool(t, s, "add_page", map[string]any{"name": "Flows"})
+	callTool(t, s, "add_page", map[string]any{}) // minimal
+	callTool(t, s, "add_page", map[string]any{"name": "Sprint 1", "index": float64(0)})
+
+	// delete_page
+	callTool(t, s, "delete_page", map[string]any{"pageId": "0:2"})
+	callTool(t, s, "delete_page", map[string]any{"pageName": "Flows"})
+
+	// rename_page
+	callTool(t, s, "rename_page", map[string]any{"pageId": "0:2", "newName": "Sprint 1"})
+	callTool(t, s, "rename_page", map[string]any{"pageName": "Flows", "newName": "User Flows"})
+}
+
+func TestHandlers_ReparentBatchRenameTextReplaceEffectsSection(t *testing.T) {
+	s, _ := newTestServer(t)
+
+	// reparent_nodes
+	callTool(t, s, "reparent_nodes", map[string]any{"nodeIds": []any{"1:1"}, "parentId": "2:2"})
+	callTool(t, s, "reparent_nodes", map[string]any{"nodeIds": []any{"1:1", "3:3"}, "parentId": "2:2"})
+
+	// batch_rename_nodes — find/replace
+	callTool(t, s, "batch_rename_nodes", map[string]any{
+		"nodeIds": []any{"1:1", "2:2"}, "find": "Button", "replace": "Btn",
+	})
+	// batch_rename_nodes — prefix/suffix
+	callTool(t, s, "batch_rename_nodes", map[string]any{
+		"nodeIds": []any{"1:1"}, "prefix": "UI/", "suffix": "_v2",
+	})
+	// batch_rename_nodes — regex
+	callTool(t, s, "batch_rename_nodes", map[string]any{
+		"nodeIds": []any{"1:1"}, "find": "\\d+", "replace": "N", "useRegex": true,
+	})
+
+	// find_replace_text — across page
+	callTool(t, s, "find_replace_text", map[string]any{"find": "Old", "replace": "New"})
+	// find_replace_text — scoped to node
+	callTool(t, s, "find_replace_text", map[string]any{"find": "x", "replace": "y", "nodeId": "1:1"})
+	// find_replace_text — regex
+	callTool(t, s, "find_replace_text", map[string]any{
+		"find": "\\$\\d+", "replace": "$0", "useRegex": true,
+	})
+
+	// set_effects — drop shadow
+	callTool(t, s, "set_effects", map[string]any{
+		"nodeId":  "1:1",
+		"effects": []any{map[string]any{"type": "DROP_SHADOW", "radius": float64(8), "color": "#000000", "opacity": float64(0.3)}},
+	})
+	// set_effects — layer blur
+	callTool(t, s, "set_effects", map[string]any{
+		"nodeId":  "1:1",
+		"effects": []any{map[string]any{"type": "LAYER_BLUR", "radius": float64(4)}},
+	})
+	// set_effects — clear
+	callTool(t, s, "set_effects", map[string]any{"nodeId": "1:1", "effects": []any{}})
+
+	// create_section
+	callTool(t, s, "create_section", map[string]any{"name": "Sprint 1", "x": float64(0), "y": float64(0)})
+	callTool(t, s, "create_section", map[string]any{}) // minimal
+	callTool(t, s, "create_section", map[string]any{"width": float64(1200), "height": float64(900)})
+}

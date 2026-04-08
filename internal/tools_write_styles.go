@@ -139,8 +139,30 @@ func registerWriteStyleTools(s *server.MCPServer, node *Node) {
 		return renderResponse(resp, err)
 	})
 
+	s.AddTool(mcp.NewTool("set_effects",
+		mcp.WithDescription("Apply one or more effects (drop shadow, inner shadow, layer blur, background blur) directly to a node. Replaces all existing effects. Pass an empty array to clear all effects."),
+		mcp.WithString("nodeId",
+			mcp.Required(),
+			mcp.Description("Target node ID in colon format e.g. 4029:12345"),
+		),
+		mcp.WithArray("effects",
+			mcp.Required(),
+			mcp.Description("Array of effect objects. Each has: type (DROP_SHADOW | INNER_SHADOW | LAYER_BLUR | BACKGROUND_BLUR), radius, color (hex, shadows only), opacity (0–1, shadows only), offsetX, offsetY (shadows only), spread (shadows only), visible (default true)"),
+			mcp.Items(map[string]any{"type": "object"}),
+		),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		nodeID, _ := args["nodeId"].(string)
+		nodeID = NormalizeNodeID(nodeID)
+		params := map[string]interface{}{
+			"effects": args["effects"],
+		}
+		resp, err := node.Send(ctx, "set_effects", []string{nodeID}, params)
+		return renderResponse(resp, err)
+	})
+
 	s.AddTool(mcp.NewTool("bind_variable_to_node",
-		mcp.WithDescription("Bind a local variable to a node property, so the property is driven by the variable's value. Use 'fillColor' to bind a COLOR variable to the node's fill color. Use other fields (opacity, width, height, cornerRadius, itemSpacing, paddingTop, paddingRight, paddingBottom, paddingLeft) for FLOAT variables."),
+		mcp.WithDescription("Bind a local variable to a node property so the property is driven by the variable's value. COLOR variables: use fillColor or strokeColor. BOOLEAN variables: use visible. FLOAT variables: use opacity, rotation, width, height, cornerRadius, topLeftRadius, topRightRadius, bottomLeftRadius, bottomRightRadius, strokeWeight, itemSpacing, paddingTop, paddingRight, paddingBottom, paddingLeft."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Target node ID in colon format e.g. 4029:12345"),
@@ -151,7 +173,7 @@ func registerWriteStyleTools(s *server.MCPServer, node *Node) {
 		),
 		mcp.WithString("field",
 			mcp.Required(),
-			mcp.Description("Property to bind: fillColor | opacity | width | height | cornerRadius | itemSpacing | paddingTop | paddingRight | paddingBottom | paddingLeft"),
+			mcp.Description("Property to bind: fillColor | strokeColor | visible | opacity | rotation | width | height | cornerRadius | topLeftRadius | topRightRadius | bottomLeftRadius | bottomRightRadius | strokeWeight | itemSpacing | paddingTop | paddingRight | paddingBottom | paddingLeft"),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()

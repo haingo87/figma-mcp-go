@@ -9,4 +9,5 @@ func registerWriteTools(s *server.MCPServer, node *Node) {
 	registerWriteVariableTools(s, node)
 	registerWriteComponentTools(s, node)
 	registerWritePrototypeTools(s, node)
+	registerWritePageTools(s, node)
 }

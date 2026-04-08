@@ -151,3 +151,50 @@ describe("create_component", () => {
     ).rejects.toThrow("nodeId is required");
   });
 });
+
+// ── create_section ────────────────────────────────────────────────────────────
+
+describe("create_section", () => {
+  let createdSection: any;
+
+  beforeEach(() => {
+    createdSection = null;
+    (globalThis as any).figma = {
+      ...(globalThis as any).figma,
+      currentPage: { id: "0:1", name: "Page 1", appendChild: () => {} },
+      createSection: () => {
+        createdSection = {
+          id: "section:new", name: "Section", type: "SECTION",
+          x: 0, y: 0, width: 200, height: 200,
+          resizeWithoutConstraints(w: number, h: number) { this.width = w; this.height = h; },
+        };
+        return createdSection;
+      },
+    };
+  });
+
+  it("creates a section with a name", async () => {
+    const res = await handleWriteCreateRequest(makeRequest("create_section", [], { name: "Sprint 1" }));
+    expect(createdSection.name).toBe("Sprint 1");
+    expect(res?.data.type).toBe("SECTION");
+    expect(res?.data.id).toBe("section:new");
+    expect(commitUndoCalled).toBe(true);
+  });
+
+  it("creates a section at a specific position", async () => {
+    const res = await handleWriteCreateRequest(makeRequest("create_section", [], { x: 100, y: 200 }));
+    expect(createdSection.x).toBe(100);
+    expect(createdSection.y).toBe(200);
+  });
+
+  it("creates a section with custom size", async () => {
+    await handleWriteCreateRequest(makeRequest("create_section", [], { width: 800, height: 600 }));
+    expect(createdSection.width).toBe(800);
+    expect(createdSection.height).toBe(600);
+  });
+
+  it("creates a section with default values when no params given", async () => {
+    const res = await handleWriteCreateRequest(makeRequest("create_section", [], {}));
+    expect(res?.data.id).toBe("section:new");
+  });
+});
