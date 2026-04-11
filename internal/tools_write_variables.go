@@ -38,18 +38,18 @@ func registerWriteVariableTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("create_variable",
-		mcp.WithDescription("Create a new variable in a collection."),
+		mcp.WithDescription("Create a new variable (design token) inside an existing collection. Returns the new variable's ID. Use get_variable_defs to find collection IDs, set_variable_value to set values per mode, and bind_variable_to_node to apply the variable to a node property."),
 		mcp.WithString("name",
 			mcp.Required(),
-			mcp.Description("Variable name"),
+			mcp.Description("Variable name — use slash notation to group e.g. 'Color/Primary', 'Spacing/MD'"),
 		),
 		mcp.WithString("collectionId",
 			mcp.Required(),
-			mcp.Description("Variable collection ID"),
+			mcp.Description("ID of the variable collection to add this variable to (from get_variable_defs)"),
 		),
 		mcp.WithString("type",
 			mcp.Required(),
-			mcp.Description("Variable type: COLOR, FLOAT, STRING, or BOOLEAN"),
+			mcp.Description("Variable type: COLOR (hex color), FLOAT (numeric dimension/spacing), STRING (text), or BOOLEAN (true/false toggle)"),
 		),
 		mcp.WithString("value", mcp.Description("Initial value for the first mode. COLOR: hex e.g. #FF5733. FLOAT: number e.g. 16. STRING: text. BOOLEAN: true or false.")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -79,7 +79,7 @@ func registerWriteVariableTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("delete_variable",
-		mcp.WithDescription("Delete a variable or an entire variable collection. Provide either variableId or collectionId."),
+		mcp.WithDescription("Delete a single variable (provide variableId) or an entire collection and all its variables (provide collectionId). Provide exactly one of the two — not both."),
 		mcp.WithString("variableId", mcp.Description("Variable ID to delete")),
 		mcp.WithString("collectionId", mcp.Description("Collection ID to delete (removes all variables in the collection)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

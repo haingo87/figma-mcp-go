@@ -9,7 +9,7 @@ import (
 
 func registerReadStyleTools(s *server.MCPServer, node *Node) {
 	s.AddTool(mcp.NewTool("get_styles",
-		mcp.WithDescription("Get all local styles in the document: paint, text, effect, and grid styles"),
+		mcp.WithDescription("Get all local styles in the document (paint, text, effect, and grid). Returns each style's ID, name, type, and properties. Use the style ID with apply_style_to_node or update_paint_style. For design tokens (variables), use get_variable_defs instead."),
 	), makeHandler(node, "get_styles", nil, nil))
 
 	s.AddTool(mcp.NewTool("get_variable_defs",
@@ -21,9 +21,9 @@ func registerReadStyleTools(s *server.MCPServer, node *Node) {
 	), makeHandler(node, "get_local_components", nil, nil))
 
 	s.AddTool(mcp.NewTool("get_annotations",
-		mcp.WithDescription("Get all dev-mode annotations in the current document or on a specific node."),
+		mcp.WithDescription("Get dev-mode annotations in the current document or scoped to a specific node. Returns annotation objects with label text, measurement type, and the ID of the annotated node. Omit nodeId to retrieve all annotations on the current page."),
 		mcp.WithString("nodeId",
-			mcp.Description("Optional node ID to filter annotations, colon format e.g. '4029:12345'"),
+			mcp.Description("Optional — scope results to annotations on this node and its descendants, colon format e.g. '4029:12345'"),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		params := map[string]interface{}{}

@@ -41,7 +41,7 @@ Example — go back on click:
 		),
 		mcp.WithArray("reactions",
 			mcp.Required(),
-			mcp.Description("Array of reaction objects. Each has a trigger and an action."),
+			mcp.Description("Array of reaction objects. Each has a 'trigger' and an 'actions' array (plural) of Action objects."),
 			mcp.Items(map[string]any{"type": "object"}),
 		),
 		mcp.WithString("mode",

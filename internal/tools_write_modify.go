@@ -26,17 +26,17 @@ func registerWriteModifyTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("set_fills",
-		mcp.WithDescription("Set the fill color of a node."),
+		mcp.WithDescription("Set the fill color on a single node (takes one nodeId, not an array). Use mode='append' to stack a new fill on top of existing fills instead of replacing them."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Node ID in colon format e.g. '4029:12345'"),
 		),
 		mcp.WithString("color",
 			mcp.Required(),
-			mcp.Description("Fill color as hex e.g. #FF5733"),
+			mcp.Description("Fill color as hex: #RRGGBB e.g. #FF5733 or #RRGGBBAA e.g. #FF573380 for 50% alpha"),
 		),
-		mcp.WithNumber("opacity", mcp.Description("Fill opacity 0–1 (default 1)")),
-		mcp.WithString("mode", mcp.Description("'replace' (default) overwrites all fills; 'append' stacks on top of existing fills")),
+		mcp.WithNumber("opacity", mcp.Description("Fill opacity 0–1 (default 1). Combines multiplicatively with any alpha in the color hex.")),
+		mcp.WithString("mode", mcp.Description("'replace' (default) overwrites all existing fills; 'append' stacks this fill on top of existing ones")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		nodeID, _ := req.GetArguments()["nodeId"].(string)
 		params := map[string]interface{}{
@@ -53,7 +53,7 @@ func registerWriteModifyTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("set_strokes",
-		mcp.WithDescription("Set the stroke color and weight of a node."),
+		mcp.WithDescription("Set the stroke color and weight on a single node (takes one nodeId, not an array). Use mode='append' to stack a new stroke on top of existing strokes instead of replacing them."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Node ID in colon format e.g. '4029:12345'"),
@@ -80,7 +80,7 @@ func registerWriteModifyTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("move_nodes",
-		mcp.WithDescription("Move one or more nodes to an absolute position on the canvas."),
+		mcp.WithDescription("Move one or more nodes to an absolute canvas position. The same x/y is applied to every node independently (not a relative offset from current position)."),
 		mcp.WithArray("nodeIds",
 			mcp.Required(),
 			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
@@ -103,7 +103,7 @@ func registerWriteModifyTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("resize_nodes",
-		mcp.WithDescription("Resize one or more nodes. Provide width, height, or both."),
+		mcp.WithDescription("Resize one or more nodes. The same width/height is applied to every node in the list independently. Provide width, height, or both."),
 		mcp.WithArray("nodeIds",
 			mcp.Required(),
 			mcp.Description("Node IDs in colon format e.g. ['4029:12345']"),
@@ -126,14 +126,14 @@ func registerWriteModifyTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("rename_node",
-		mcp.WithDescription("Rename a node."),
+		mcp.WithDescription("Rename a single node by ID. Returns the updated node with its new name. Use batch_rename_nodes to rename multiple nodes at once or to apply find/replace patterns across many nodes."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Node ID in colon format e.g. '4029:12345'"),
 		),
 		mcp.WithString("name",
 			mcp.Required(),
-			mcp.Description("New name for the node"),
+			mcp.Description("New name for the node. Figma supports slash-separated path notation e.g. 'Icons/Arrow/Left' to organise nodes in component panels."),
 		),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		nodeID, _ := req.GetArguments()["nodeId"].(string)

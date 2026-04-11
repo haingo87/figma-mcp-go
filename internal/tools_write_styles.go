@@ -26,20 +26,20 @@ func registerWriteStyleTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("create_text_style",
-		mcp.WithDescription("Create a new local text style."),
+		mcp.WithDescription("Create a new local text style (typography preset). Returns the new style's ID. Apply it to nodes with apply_style_to_node. Use get_styles to list existing text styles."),
 		mcp.WithString("name",
 			mcp.Required(),
-			mcp.Description("Style name e.g. 'Heading/H1'"),
+			mcp.Description("Style name — use slash notation to organise into groups e.g. 'Heading/H1', 'Body/Regular'"),
 		),
 		mcp.WithNumber("fontSize", mcp.Description("Font size in pixels (default 16)")),
-		mcp.WithString("fontFamily", mcp.Description("Font family e.g. Inter (default Inter)")),
-		mcp.WithString("fontStyle", mcp.Description("Font style e.g. Regular, Bold (default Regular)")),
-		mcp.WithString("textDecoration", mcp.Description("NONE, UNDERLINE, or STRIKETHROUGH")),
-		mcp.WithNumber("lineHeightValue", mcp.Description("Line height value")),
-		mcp.WithString("lineHeightUnit", mcp.Description("Line height unit: PIXELS or PERCENT (default PIXELS)")),
-		mcp.WithNumber("letterSpacingValue", mcp.Description("Letter spacing value")),
-		mcp.WithString("letterSpacingUnit", mcp.Description("Letter spacing unit: PIXELS or PERCENT (default PIXELS)")),
-		mcp.WithString("description", mcp.Description("Optional style description")),
+		mcp.WithString("fontFamily", mcp.Description("Font family name e.g. 'Inter', 'Roboto' (default Inter). Must be installed in Figma.")),
+		mcp.WithString("fontStyle", mcp.Description("Font style variant e.g. 'Regular', 'Bold', 'Medium', 'SemiBold' (default Regular)")),
+		mcp.WithString("textDecoration", mcp.Description("Text decoration: NONE (default), UNDERLINE, or STRIKETHROUGH")),
+		mcp.WithNumber("lineHeightValue", mcp.Description("Line height value (unit set by lineHeightUnit)")),
+		mcp.WithString("lineHeightUnit", mcp.Description("Line height unit: PIXELS (default) or PERCENT")),
+		mcp.WithNumber("letterSpacingValue", mcp.Description("Letter spacing value (unit set by letterSpacingUnit)")),
+		mcp.WithString("letterSpacingUnit", mcp.Description("Letter spacing unit: PIXELS (default) or PERCENT")),
+		mcp.WithString("description", mcp.Description("Optional human-readable description shown in the Figma style panel")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		params := req.GetArguments()
 		resp, err := node.Send(ctx, "create_text_style", nil, params)
@@ -88,7 +88,7 @@ func registerWriteStyleTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("update_paint_style",
-		mcp.WithDescription("Update the name, color, or description of an existing paint style."),
+		mcp.WithDescription("Update an existing paint style's name, color, or description. Only paint styles support in-place updates — to modify text, effect, or grid styles, use delete_style and recreate them."),
 		mcp.WithString("styleId",
 			mcp.Required(),
 			mcp.Description("Paint style ID"),

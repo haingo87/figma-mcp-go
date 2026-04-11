@@ -9,7 +9,7 @@ import (
 
 func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	s.AddTool(mcp.NewTool("get_document",
-		mcp.WithDescription("Get the current Figma page document tree"),
+		mcp.WithDescription("Get the full node tree of the current page (not the whole file — only the active page). Returns all nodes recursively and can be very large. Prefer get_design_context for exploration or when token efficiency matters."),
 	), makeHandler(node, "get_document", nil, nil))
 
 	s.AddTool(mcp.NewTool("get_pages",
@@ -21,11 +21,11 @@ func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	), makeHandler(node, "get_metadata", nil, nil))
 
 	s.AddTool(mcp.NewTool("get_selection",
-		mcp.WithDescription("Get the currently selected nodes in Figma"),
+		mcp.WithDescription("Get the nodes currently selected in Figma. Returns an empty array if nothing is selected. Use get_design_context or get_node to retrieve deeper detail about a specific node by ID."),
 	), makeHandler(node, "get_selection", nil, nil))
 
 	s.AddTool(mcp.NewTool("get_node",
-		mcp.WithDescription("Get a specific Figma node by ID. Must use colon format e.g. '4029:12345', never hyphens."),
+		mcp.WithDescription("Get a single node by ID with full detail. Use get_nodes_info to fetch multiple nodes in one round-trip instead of calling this repeatedly. Node ID must be colon format e.g. '4029:12345', never hyphens."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Node ID in colon format e.g. '4029:12345'"),
@@ -37,7 +37,7 @@ func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("get_nodes_info",
-		mcp.WithDescription("Get detailed information about multiple Figma nodes by ID in a single call."),
+		mcp.WithDescription("Get full details for multiple nodes by ID in one round-trip. Prefer this over calling get_node repeatedly when you need several nodes."),
 		mcp.WithArray("nodeIds",
 			mcp.Required(),
 			mcp.Description("List of node IDs in colon format e.g. ['4029:12345', '4029:67890']"),
@@ -51,7 +51,7 @@ func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("get_design_context",
-		mcp.WithDescription("Get a depth-limited tree of the current selection or page. More token-efficient than get_document for large files."),
+		mcp.WithDescription("Get a depth-limited, token-efficient tree of the current selection or page. Use this instead of get_document when exploring large files. Supports detail levels (minimal/compact/full) and dedupe_components for pages heavy with repeated component instances."),
 		mcp.WithNumber("depth",
 			mcp.Description("How many levels deep to traverse (default 2)"),
 		),
@@ -77,7 +77,7 @@ func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("search_nodes",
-		mcp.WithDescription("Search for nodes by name substring and/or type within a subtree. Avoids dumping the entire document tree."),
+		mcp.WithDescription("Search for nodes by name substring and/or type within a subtree. Use this when you know (part of) the node name. Use scan_nodes_by_types when you want all nodes of a type regardless of name."),
 		mcp.WithString("query",
 			mcp.Required(),
 			mcp.Description("Name substring to match (case-insensitive)"),
@@ -110,7 +110,7 @@ func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("scan_text_nodes",
-		mcp.WithDescription("Scan all TEXT nodes in a subtree. Useful for extracting all copy from a component or frame."),
+		mcp.WithDescription("Scan all TEXT nodes in a subtree and return their content. Shorthand for scan_nodes_by_types with ['TEXT'] — use when you only need text copy from a component or frame."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Root node ID to scan from, colon format e.g. '4029:12345'"),
@@ -122,7 +122,7 @@ func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("scan_nodes_by_types",
-		mcp.WithDescription("Find all nodes matching specific types (e.g. FRAME, COMPONENT, INSTANCE) within a subtree."),
+		mcp.WithDescription("Find all nodes of specific types in a subtree, regardless of name. Use search_nodes instead when you need to filter by name."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Root node ID to scan from, colon format e.g. '4029:12345'"),
@@ -143,7 +143,7 @@ func registerReadDocumentTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("get_reactions",
-		mcp.WithDescription("Get prototype/interaction reactions on a node. Useful for understanding interactive prototypes."),
+		mcp.WithDescription("Get the prototype reactions defined on a node. Returns an array of reaction objects — each has a trigger (e.g. ON_CLICK, ON_HOVER, AFTER_TIMEOUT) and an actions array (navigate to node, open URL, go back, etc.). Use set_reactions to add or replace reactions, remove_reactions to delete them."),
 		mcp.WithString("nodeId",
 			mcp.Required(),
 			mcp.Description("Node ID in colon format e.g. '4029:12345'"),

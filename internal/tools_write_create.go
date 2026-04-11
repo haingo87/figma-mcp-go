@@ -67,18 +67,18 @@ func registerWriteCreateTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("create_text",
-		mcp.WithDescription("Create a new text node on the current page or inside a parent node."),
+		mcp.WithDescription("Create a new text node on the current page or inside a parent node. The font is loaded automatically before insertion. Returns the created node ID and bounds. Use set_text to update the content of an existing text node."),
 		mcp.WithString("text",
 			mcp.Required(),
-			mcp.Description("Text content"),
+			mcp.Description("Text content to display"),
 		),
-		mcp.WithNumber("x", mcp.Description("X position (default 0)")),
-		mcp.WithNumber("y", mcp.Description("Y position (default 0)")),
+		mcp.WithNumber("x", mcp.Description("X position in pixels (default 0)")),
+		mcp.WithNumber("y", mcp.Description("Y position in pixels (default 0)")),
 		mcp.WithNumber("fontSize", mcp.Description("Font size in pixels (default 14)")),
-		mcp.WithString("fontFamily", mcp.Description("Font family e.g. Inter (default Inter)")),
-		mcp.WithString("fontStyle", mcp.Description("Font style e.g. Regular, Bold (default Regular)")),
-		mcp.WithString("fillColor", mcp.Description("Text color as hex e.g. #000000")),
-		mcp.WithString("name", mcp.Description("Node name")),
+		mcp.WithString("fontFamily", mcp.Description("Font family name e.g. 'Inter', 'Roboto', 'SF Pro Display' (default Inter). Must be a font installed in Figma.")),
+		mcp.WithString("fontStyle", mcp.Description("Font style variant e.g. 'Regular', 'Bold', 'Italic', 'Medium', 'SemiBold' (default Regular). Must match an available style for the chosen fontFamily.")),
+		mcp.WithString("fillColor", mcp.Description("Text color as hex e.g. #000000 (default black)")),
+		mcp.WithString("name", mcp.Description("Node name shown in the layers panel (defaults to the text content)")),
 		mcp.WithString("parentId", mcp.Description("Parent node ID in colon format. Defaults to current page.")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		params := req.GetArguments()
