@@ -9,7 +9,11 @@ import (
 
 func registerWriteVariableTools(s *server.MCPServer, node *Node) {
 	s.AddTool(mcp.NewTool("create_variable_collection",
-		mcp.WithDescription("Create a new local variable collection."),
+		mcp.WithDescription("Create a new local variable collection with an optional initial mode name. "+
+			"NOTE — Figma free plan limits each collection to 1 mode. If you need Light/Dark (or any multi-mode) "+
+			"theming and the user is on the free plan, do NOT try to call add_variable_mode; instead use the "+
+			"name-prefix workaround: create all variables in a single collection and prefix each variable name "+
+			"with its mode, e.g. 'light/color-bg' and 'dark/color-bg'. Inform the user of this limitation."),
 		mcp.WithString("name",
 			mcp.Required(),
 			mcp.Description("Collection name"),
@@ -22,7 +26,12 @@ func registerWriteVariableTools(s *server.MCPServer, node *Node) {
 	})
 
 	s.AddTool(mcp.NewTool("add_variable_mode",
-		mcp.WithDescription("Add a new mode to an existing variable collection (e.g. Light/Dark, Desktop/Mobile)."),
+		mcp.WithDescription("Add a new mode to an existing variable collection (e.g. Light/Dark, Desktop/Mobile). "+
+			"IMPORTANT — Figma free plan only allows 1 mode per collection; calling this tool on a free-plan "+
+			"account will return the error 'Limited to 1 modes only'. If that error occurs, stop retrying and "+
+			"switch to the name-prefix workaround: keep the single default mode and create variables prefixed "+
+			"by mode, e.g. 'light/color-bg' and 'dark/color-bg' in the same collection. Tell the user that "+
+			"native multi-mode variables require a paid Figma plan (Professional or above)."),
 		mcp.WithString("collectionId",
 			mcp.Required(),
 			mcp.Description("Variable collection ID"),

@@ -179,10 +179,10 @@ export const handleWriteStyleRequest = async (request: any) => {
           const target = p.target || "fill";
           if (target === "stroke") {
             if (!("strokeStyleId" in node)) throw new Error(`Node ${nodeId} does not support stroke styles`);
-            n.strokeStyleId = p.styleId;
+            await n.setStrokeStyleIdAsync(p.styleId);
           } else {
             if (!("fillStyleId" in node)) throw new Error(`Node ${nodeId} does not support fill styles`);
-            n.fillStyleId = p.styleId;
+            await n.setFillStyleIdAsync(p.styleId);
           }
           break;
         }
@@ -192,11 +192,11 @@ export const handleWriteStyleRequest = async (request: any) => {
           break;
         case "EFFECT":
           if (!("effectStyleId" in node)) throw new Error(`Node ${nodeId} does not support effect styles`);
-          n.effectStyleId = p.styleId;
+          await n.setEffectStyleIdAsync(p.styleId);
           break;
         case "GRID":
           if (!("gridStyleId" in node)) throw new Error(`Node ${nodeId} does not support grid styles`);
-          n.gridStyleId = p.styleId;
+          await n.setGridStyleIdAsync(p.styleId);
           break;
         default:
           throw new Error(`Unknown style type: ${(style as any).type}`);

@@ -68,11 +68,42 @@ After creating tokens, offer to link existing nodes:
 - For nodes with raw fill colors that match a new variable → bind_variable_to_node(field="fillColor")
 - For TEXT nodes with matching font styles → apply_style_to_node(styleId)
 
+## Multi-mode / Theming (Light & Dark)
+
+### Paid plan (Professional / Organization / Enterprise)
+Use Figma's native multi-mode variables:
+1. create_variable_collection() — creates the collection with one default mode (e.g. "Light").
+2. add_variable_mode() — add the second mode (e.g. "Dark").
+3. create_variable() — create each variable once; it exists in all modes automatically.
+4. set_variable_value() — call once per mode to set the Light value, then again with the Dark value.
+
+### Free plan workaround (when add_variable_mode returns "Limited to 1 modes only")
+Figma's free plan is capped at 1 mode per collection. Detect this error and fall back to
+name-encoded modes: keep a **single collection with 1 mode**, and prefix every variable name
+with the mode it belongs to.
+
+Naming convention — use a slash-prefix per mode:
+- light/color-bg, dark/color-bg
+- light/color-text, dark/color-text
+- light/color-primary, dark/color-primary
+
+Steps:
+1. create_variable_collection() — one collection, accept the single default mode as-is.
+2. create_variable(name="light/<token>") — Light variant.
+3. create_variable(name="dark/<token>") — Dark variant.
+4. set_variable_value() for each variable.
+
+Bind the active-theme variable to nodes (e.g. bind the "light/color-bg" variable for light theme).
+When the user wants to switch to dark, rebind nodes to the corresponding "dark/*" variable.
+Inform the user that native mode-switching requires a paid Figma plan; with this workaround
+they manually choose which prefixed variable to bind.
+
 ## Rules
 - Never delete or overwrite existing styles/variables — only add new ones.
 - Prefer variables over paint styles for colors that will need dark-mode variants.
 - Always get user approval on the token plan (Phase 2) before executing Phase 3.
 - Process in batches of 20 during linking phase.
+- Detect the free-plan mode limit at runtime: if add_variable_mode fails with "Limited to 1 modes only", switch to the name-encoded workaround automatically and inform the user.
 `),
 				),
 			},
