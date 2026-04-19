@@ -14,8 +14,8 @@ func extractTextStyle(node map[string]any, ctx *TraversalContext) string {
 
 	if fn, ok := node["fontName"].(map[string]any); ok {
 		style.FontFamily = getString(fn, "family")
-		style.FontWeight = getFloat64(fn, "style") // fontName.style holds numeric weight in some contexts
 	}
+	style.FontWeight = getFloat64(node, "fontWeight") // fontWeight is a numeric field on the node, not fontName.style
 
 	style.FontSize = getFloat64(node, "fontSize")
 
