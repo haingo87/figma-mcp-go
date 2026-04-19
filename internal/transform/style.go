@@ -22,8 +22,8 @@ func parsePaint(paint map[string]any) string {
 		if opacity == 1 {
 			return fmt.Sprintf("#%02X%02X%02X", int(r), int(g), int(b))
 		}
-		a := pixelRound(opacity * 255)
-		return fmt.Sprintf("rgba(%d,%d,%d,%d)", int(r), int(g), int(b), int(a))
+		a := opacity
+		return fmt.Sprintf("rgba(%d,%d,%d,%.2f)", int(r), int(g), int(b), a)
 
 	case "GRADIENT_LINEAR":
 		return "linear-gradient(...)"
