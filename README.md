@@ -191,6 +191,8 @@ claude mcp add -s project figma-mcp-go -- npx -y @vkhanhqui/figma-mcp-go@latest
 
 ### Read — Document & Selection
 
+All read tools support an optional `simplify` parameter that transforms verbose Figma data into a compact, LLM-friendly format — reducing token usage and improving response accuracy. See [Response Simplification](#response-simplification) below.
+
 | Tool | Description |
 |------|-------------|
 | `get_document` | Full current page tree |
@@ -235,6 +237,77 @@ claude mcp add -s project figma-mcp-go -- npx -y @vkhanhqui/figma-mcp-go@latest
 | `annotation_conversion_strategy` | Convert manual annotations to native Figma annotations |
 | `swap_overrides_instances` | Transfer overrides between component instances |
 | `reaction_to_connector_strategy` | Map prototype reactions into interaction flow diagrams |
+
+---
+
+## Response Simplification
+
+Read tools return raw Figma plugin API data by default, which is verbose and includes many irrelevant fields. Pass `simplify: true` to transform the response into a compact, CSS-like format that reduces token usage and improves LLM accuracy.
+
+### Usage
+
+Add `simplify: true` to any read tool call:
+
+```json
+{
+  "tool": "get_node",
+  "arguments": {
+    "nodeId": "4029:12345",
+    "simplify": true
+  }
+}
+```
+
+Control traversal depth with `simplifyDepth` (default: unlimited):
+
+```json
+{
+  "tool": "get_design_context",
+  "arguments": {
+    "depth": 2,
+    "simplify": true,
+    "simplifyDepth": 3
+  }
+}
+```
+
+### Supported tools
+
+`get_document`, `get_design_context`, `get_node`, `get_nodes_info`, `get_selection`, `search_nodes`, `scan_text_nodes`, `scan_nodes_by_types`
+
+### Output format
+
+Simplified output uses a deduplicated `globalVars` map for shared styles and CSS-like values:
+
+```json
+{
+  "name": "Header",
+  "nodes": [
+    {
+      "id": "4029:123",
+      "name": "Header",
+      "type": "FRAME",
+      "layout": "layout_1",
+      "fills": "fill_1",
+      "strokes": "stroke_1",
+      "text": "Welcome",
+      "textStyle": "style_1",
+      "opacity": 0.5,
+      "borderRadius": "8px",
+      "children": [...]
+    }
+  ],
+  "globalVars": {
+    "layouts": { "layout_1": { "mode": "row", "gap": "8px", "paddingTop": "16px" } },
+    "fills": { "fill_1": "#3B82F6", "stroke_1": "#000000" },
+    "strokes": { "stroke_1": "#000000" },
+    "effects": { "effect_1": "0 2px 4px 0 rgba(0,0,0,0.10)" },
+    "textStyles": { "style_1": { "fontFamily": "Inter", "fontSize": 16 } }
+  }
+}
+```
+
+If simplification fails for any reason, the server falls back to returning raw JSON — no silent errors.
 
 ---
 
